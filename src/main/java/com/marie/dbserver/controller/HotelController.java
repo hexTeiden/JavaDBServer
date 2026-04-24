@@ -2,6 +2,7 @@ package com.marie.dbserver.controller;
 
 import com.marie.dbserver.model.Hotel;
 import com.marie.dbserver.model.HotelSizeStats;
+import com.marie.dbserver.model.OccupancySummary;
 import com.marie.dbserver.repository.HotelRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -33,6 +34,26 @@ public class HotelController {
     @GetMapping("/size")
     public List<HotelSizeStats> getHotelSizeAvg() {
         return repo.getHotelSizeAvg();
+    }
+
+    // GET /api/hotels/occupancy?hotelId=1&year=2024&category=3&month=6
+    @GetMapping("/occupancy")
+    public List<OccupancySummary> getOccupancy(
+            @RequestParam(required = false) Integer hotelId,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer category,
+            @RequestParam(required = false) Integer month
+    ) {
+        return repo.getOccupancySummary(hotelId, year, category, month);
+    }
+
+    // GET /api/hotels/batch?ids=1,2,3
+    @GetMapping("/batch")
+    public ResponseEntity<List<Hotel>> getByIds(@RequestParam List<Integer> ids) {
+        if (ids.size() < 2) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(repo.findByIds(ids));
     }
 
     //GET /api/hotels/{id}

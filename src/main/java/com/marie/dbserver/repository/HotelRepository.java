@@ -2,10 +2,13 @@ package com.marie.dbserver.repository;
 
 import com.marie.dbserver.model.Hotel;
 import com.marie.dbserver.model.HotelSizeStats;
+import com.marie.dbserver.model.OccupancySummary;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -28,6 +31,13 @@ public class HotelRepository {
                 .list();
     }
 
+    public List<Hotel> findByIds(List<Integer> ids) {
+        return jdbc.sql("SELECT * FROM hotels WHERE id IN (:ids)")
+                .param("ids", ids)
+                .query(Hotel.class)
+                .list();
+    }
+
     /**
      * Ein Hotel per ID holen
      */
@@ -46,8 +56,8 @@ public class HotelRepository {
         return jdbc.sql("""
         select name, category as rating, avg(noRooms + noBeds) as average_size
         from hotels
-        group bycategory
-        order by category desc;
+        group by category, name
+        order by category desc
         """)
                 .query(HotelSizeStats.class)
                 .list();
@@ -110,6 +120,50 @@ public class HotelRepository {
         return jdbc.sql("DELETE FROM hotels WHERE id = :id")
                 .param("id", id)
                 .update();
+    }
+
+    public List<OccupancySummary> getOccupancySummary(Integer hotelId, Integer year, Integer category, Integer month) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT h.name, h.category,
+                       YEAR(b.checkin_date)  AS year,
+                       MONTH(b.checkin_date) AS month,
+                       SUM(b.rooms_occupied) AS total_rooms_occupied,
+                       SUM(b.beds_occupied)  AS total_beds_occupied
+                FROM bookings b
+                JOIN hotels h ON b.hotel_id = h.id
+                WHERE 1=1
+                """);
+
+        Map<String, Object> params = new HashMap<>();
+
+        if (hotelId != null) {
+            sql.append(" AND h.id = :hotelId");
+            params.put("hotelId", hotelId);
+        }
+        if (year != null) {
+            sql.append(" AND YEAR(b.checkin_date) = :year");
+            params.put("year", year);
+        }
+        if (category != null) {
+            sql.append(" AND LEN(h.category) >= :category");
+            params.put("category", category);
+        }
+        if (month != null) {
+            sql.append(" AND MONTH(b.checkin_date) = :month");
+            params.put("month", month);
+        }
+
+        sql.append("""
+
+                GROUP BY h.name, h.category, YEAR(b.checkin_date), MONTH(b.checkin_date)
+                ORDER BY YEAR(b.checkin_date), MONTH(b.checkin_date)
+                """);
+
+        JdbcClient.StatementSpec spec = jdbc.sql(sql.toString());
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            spec = spec.param(entry.getKey(), entry.getValue());
+        }
+        return spec.query(OccupancySummary.class).list();
     }
 
     /**

@@ -2,7 +2,7 @@ package com.marie.dbserver.model;
 
 public record HotelSizeStats(
         String name,
-        int rating,
+        String rating,
         double averageSize
 ) {
 }
