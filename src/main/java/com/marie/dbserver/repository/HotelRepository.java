@@ -49,18 +49,49 @@ public class HotelRepository {
     }
 
     /**
-     * Average Hotel size bekommen
+     * Average Hotel size bekommen (optional gefiltert nach hotel, year, category >=, month)
      */
+    public List<HotelSizeStats> getHotelSizeAvg(Integer hotelId, Integer year, Integer category, Integer month) {
+        boolean needsBookingJoin = (year != null || month != null);
 
-    public List<HotelSizeStats> getHotelSizeAvg() {
-        return jdbc.sql("""
-        select name, category as rating, avg(noRooms + noBeds) as average_size
-        from hotels
-        group by category, name
-        order by category desc
-        """)
-                .query(HotelSizeStats.class)
-                .list();
+        StringBuilder sql = new StringBuilder("""
+                SELECT h.name, h.category AS rating, AVG(h.noRooms + h.noBeds) AS average_size
+                FROM hotels h
+                """);
+
+        if (needsBookingJoin) {
+            sql.append(" JOIN bookings b ON b.hotel_id = h.id\n");
+        }
+
+        sql.append(" WHERE 1=1\n");
+
+        Map<String, Object> params = new HashMap<>();
+
+        if (hotelId != null) {
+            sql.append(" AND h.id = :hotelId\n");
+            params.put("hotelId", hotelId);
+        }
+        if (category != null) {
+            sql.append(" AND LEN(h.category) >= :category\n");
+            params.put("category", category);
+        }
+        if (year != null) {
+            sql.append(" AND YEAR(b.checkin_date) = :year\n");
+            params.put("year", year);
+        }
+        if (month != null) {
+            sql.append(" AND MONTH(b.checkin_date) = :month\n");
+            params.put("month", month);
+        }
+
+        sql.append(" GROUP BY h.category, h.name\n");
+        sql.append(" ORDER BY h.category DESC\n");
+
+        JdbcClient.StatementSpec spec = jdbc.sql(sql.toString());
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            spec = spec.param(entry.getKey(), entry.getValue());
+        }
+        return spec.query(HotelSizeStats.class).list();
     }
 
     /**

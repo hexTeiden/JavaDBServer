@@ -7,6 +7,8 @@ import com.marie.dbserver.repository.HotelRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Month;
+import java.time.Year;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,10 +32,15 @@ public class HotelController {
     }
 
 
-    //GET /api/hotels/size
+    // GET /api/hotels/size?hotelId=1&year=2024&category=3&month=6
     @GetMapping("/size")
-    public List<HotelSizeStats> getHotelSizeAvg() {
-        return repo.getHotelSizeAvg();
+    public List<HotelSizeStats> getHotelSizeAvg(
+            @RequestParam(required = false) Integer hotelId,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer category,
+            @RequestParam(required = false) Integer month
+    ) {
+        return repo.getHotelSizeAvg(hotelId, year, category, month);
     }
 
     // GET /api/hotels/occupancy?hotelId=1&year=2024&category=3&month=6
@@ -55,14 +62,6 @@ public class HotelController {
         }
         return ResponseEntity.ok(repo.findByIds(ids));
     }
-
-    //GET /api/hotels/{id}
-    @GetMapping("/{id:\\\\d+}")
-    public List<Hotel> getHotelByID (@PathVariable int id) {
-        return repo.findById(id);
-    }
-
-
 
     // POST /api/hotels
     @PostMapping

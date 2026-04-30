@@ -1,9 +1,85 @@
+GET http://localhost:3000/api/hotels
+
+###
 GET localhost:3000/api/hotels/size
 
 ###
-
 GET localhost:3000/api/hotels/occupancy?year=2024&category=3
 
 ###
-
 GET localhost:3000/api/hotels/occupancy?hotelId=1&month=6
+
+###
+GET http://localhost:3000/api/hotels/batch?ids=1,2,3
+
+###
+POST localhost:3000/api/hotels
+Content-Type: application/json
+
+{
+  "id": 0,
+  "noRooms": 45,
+  "noBeds": 90,
+  "category": "****",
+  "name": "Hotel Sacher",
+  "owner": "Elisabeth Gürtler",
+  "contact": "office@sacher.com",
+  "address": "Philharmoniker Str. 4",
+  "city": "Wien",
+  "cityCode": "1010",
+  "phone": "+43 1 51456"
+}
+
+###
+POST localhost:3000/api/hotels
+Content-Type: application/json
+
+{
+  "id": 0,
+  "noRooms": 28,
+  "noBeds": 56,
+  "category": "***",
+  "name": "Hotel Goldener Hirsch",
+  "owner": "Klaus Hofbauer",
+  "contact": "info@goldener-hirsch.at",
+  "address": "Getreidegasse 37",
+  "city": "Salzburg",
+  "cityCode": "5020",
+  "phone": "+43 662 808440"
+}
+
+### US4 - Transaktionsscreen: Hotel-Info + alle Belegungsdaten holen
+GET http://localhost:3000/api/occupancies/1
+
+###
+
+GET http://localhost:3000/api/occupancies
+
+### US10 - Belegungsliste mit Jahres-Filter (2024 bis 2025)
+GET http://localhost:3000/api/occupancies/1?yearFrom=2024&yearTo=2025
+
+###
+
+### US10 - Belegungsliste mit Jahr + Monat von/bis (Q1 2024)
+GET http://localhost:3000/api/occupancies/1?yearFrom=2024&yearTo=2024&monthFrom=1&monthTo=3
+
+###
+
+### US10 - Belegungsliste nur Monat-Filter (jeden Juni aller Jahre)
+GET http://localhost:3000/api/occupancies/1?monthFrom=6&monthTo=6
+
+###
+
+### US4 - Neue Belegungsdaten für Hotel 1 einfügen (hotel_id kommt aus dem Pfad, nicht editierbar)
+POST http://localhost:3000/api/occupancies/1
+Content-Type: application/json
+
+{
+  "rooms": 45,
+  "usedRooms": 30,
+  "usedBeds": 55,
+  "year": 2024,
+  "month": 6
+}
+
+###
