@@ -22,13 +22,16 @@ public class OccupancyController {
         this.hotelRepo = hotelRepo;
     }
 
+    // GET api/occupancy
     @GetMapping
     public ResponseEntity<List<Occupancy>> getAll(){
         return ResponseEntity.ok(occupancyRepo.getAllOccupancies());
     }
 
+    //US 10
+
     // GET /api/occupancies/{hotelId}?yearFrom=2024&yearTo=2025&monthFrom=1&monthTo=6
-    // Returns hotel id + name and occupancy records, optionally filtered by year/month range.
+    // Returned hotelid, name und occupancy Einträge, optional ist filtern nach Jahr/Monats Intervall (z.B. 2024-2025, Mai-August, März 2023-Juli 2023)
     @GetMapping("/{hotelId}")
     public ResponseEntity<HotelOccupancyView> getForHotel(
             @PathVariable int hotelId,
@@ -46,9 +49,11 @@ public class OccupancyController {
         return ResponseEntity.ok(new HotelOccupancyView(hotel.id(), hotel.name(), occupancies));
     }
 
+    // War nicht gefragt, aber nicht schlecht dabei zu haben
+
     // POST /api/occupancies/{hotelId}
-    // Adds new transactional data (rooms, usedRooms, usedBeds, year, month) for a hotel.
-    // hotelId comes from the path — the body must not override it.
+    // Fügt neue transactional data (Rooms, usedRooms, usedBeds, year, month) zu nem Hotel hinzu
+    // hotelId kommt aus dem Path --> auf keinen Fall überschreiben
     @PostMapping("/{hotelId}")
     public ResponseEntity<Occupancy> create(@PathVariable int hotelId, @RequestBody Occupancy body) {
         List<Hotel> hotels = hotelRepo.findById(hotelId);
@@ -56,7 +61,7 @@ public class OccupancyController {
             return ResponseEntity.notFound().build();
         }
         Occupancy toSave = new Occupancy(hotelId, body.rooms(), body.usedRooms(), body.usedBeds(), body.year(), body.month());
-        Occupancy saved = occupancyRepo.save(toSave);
+        Occupancy saved = occupancyRepo.addNewOccupancy(toSave);
         return ResponseEntity.status(201).body(saved);
     }
 }

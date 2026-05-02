@@ -39,7 +39,7 @@ public class OccupancyRepository {
                 .list();
     }
 
-    public Occupancy save(Occupancy occupancy) {
+    public Occupancy addNewOccupancy(Occupancy occupancy) {
         jdbc.sql("""
                 INSERT INTO occupancies (hotel_id, rooms, usedRooms, usedBeds, year, month)
                 VALUES (:hotel_id, :rooms, :usedRooms, :usedBeds, :year, :month)

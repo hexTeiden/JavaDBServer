@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hotel Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 1.2rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 600; }
+    header span { font-size: 0.85rem; opacity: 0.6; }
+
+    main { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #1a1a2e;
+      border-left: 4px solid #4f8ef7;
+      padding-left: 0.6rem;
+    }
+
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    select, input {
+      padding: 0.45rem 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background: #fff;
+    }
+
+    button {
+      padding: 0.45rem 1.1rem;
+      background: #4f8ef7;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover { background: #3a78e0; }
+    button.secondary {
+      background: #6c757d;
+    }
+    button.secondary:hover { background: #545b62; }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    thead th {
+      background: #f7f8fa;
+      text-align: left;
+      padding: 0.65rem 0.9rem;
+      font-weight: 600;
+      color: #555;
+      border-bottom: 2px solid #e9ecef;
+      white-space: nowrap;
+    }
+    tbody tr:hover { background: #f0f4ff; }
+    tbody td {
+      padding: 0.6rem 0.9rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: #e8f0fe;
+      color: #3a78e0;
+    }
+
+    .stars { color: #f5a623; letter-spacing: 1px; }
+
+    .tag {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      background: #eef2ff;
+      color: #4f46e5;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin: 1px;
+    }
+
+    #occupancy-section { display: none; }
+
+    .status {
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 0.5rem;
+      min-height: 1.2em;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1.2rem 1rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .stat-card .num {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #4f8ef7;
+    }
+    .stat-card .label {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 0.25rem;
+    }
+
+    .pct-bar {
+      height: 6px;
+      background: #e9ecef;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .pct-fill {
+      height: 100%;
+      background: #4f8ef7;
+      border-radius: 3px;
+      transition: width 0.4s;
+    }
+    .pct-fill.high { background: #28a745; }
+    .pct-fill.mid  { background: #f5a623; }
+    .pct-fill.low  { background: #dc3545; }
+
+    #occ-hotel-name {
+      font-weight: 600;
+      color: #4f8ef7;
+    }
+
+    .empty { color: #aaa; font-size: 0.9rem; padding: 1rem 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Hotel Dashboard</h1>
+  <span>Marie Projekt &mdash; DB Server</span>
+</header>
+
+<main>
+  <!-- Stats Row -->
+  <div class="stat-grid" id="stats-row">
+    <div class="stat-card"><div class="num" id="stat-total">–</div><div class="label">Hotels gesamt</div></div>
+    <div class="stat-card"><div class="num" id="stat-rooms">–</div><div class="label">Zimmer gesamt</div></div>
+    <div class="stat-card"><div class="num" id="stat-beds">–</div><div class="label">Betten gesamt</div></div>
+    <div class="stat-card"><div class="num" id="stat-cats">–</div><div class="label">Kategorien</div></div>
+  </div>
+
+  <!-- Hotels Table -->
+  <div class="card">
+    <div class="section-title">Hotels</div>
+    <div class="controls">
+      <select id="filter-category">
+        <option value="">Alle Kategorien</option>
+      </select>
+      <button onclick="loadHotels()">Filter</button>
+      <button class="secondary" onclick="resetFilter()">Reset</button>
+    </div>
+    <div class="status" id="hotels-status"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Kategorie</th>
+          <th>Stadt</th>
+          <th>Zimmer</th>
+          <th>Betten</th>
+          <th>Tags</th>
+          <th>Aktion</th>
+        </tr>
+      </thead>
+      <tbody id="hotels-body">
+        <tr><td colspan="8" class="empty">Lade Daten…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Occupancy Section -->
+  <div class="card" id="occupancy-section">
+    <div class="section-title">Belegung: <span id="occ-hotel-name"></span></div>
+    <div class="controls">
+      <label style="font-size:0.85rem">Jahr von</label>
+      <input type="number" id="occ-year-from" placeholder="z.B. 2022" style="width:110px" />
+      <label style="font-size:0.85rem">bis</label>
+      <input type="number" id="occ-year-to" placeholder="z.B. 2024" style="width:110px" />
+      <button onclick="loadOccupancy()">Laden</button>
+      <button class="secondary" onclick="closeOccupancy()">Schließen</button>
+    </div>
+    <div class="status" id="occ-status"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Jahr</th>
+          <th>Monat</th>
+          <th>Zimmer</th>
+          <th>Genutzte Zimmer</th>
+          <th>Genutzte Betten</th>
+          <th>Auslastung</th>
+        </tr>
+      </thead>
+      <tbody id="occ-body">
+        <tr><td colspan="6" class="empty">Hotel auswählen</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+  let currentHotelId = null;
+  let allHotels = [];
+
+  const MONTHS = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+  async function fetchJSON(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  function stars(n) {
+    return '<span class="stars">' + '★'.repeat(n) + '☆'.repeat(Math.max(0, 5 - n)) + '</span>';
+  }
+
+  function pctBar(used, total) {
+    if (!total) return '';
+    const pct = Math.min(100, Math.round((used / total) * 100));
+    const cls = pct >= 70 ? 'high' : pct >= 40 ? 'mid' : 'low';
+    return `<div>${pct}%</div>
+            <div class="pct-bar"><div class="pct-fill ${cls}" style="width:${pct}%"></div></div>`;
+  }
+
+  async function loadHotels() {
+    const cat = document.getElementById('filter-category').value;
+    const url = '/api/hotels' + (cat ? `?category=${encodeURIComponent(cat)}` : '');
+    document.getElementById('hotels-status').textContent = 'Lade…';
+    try {
+      const hotels = await fetchJSON(url);
+      renderHotels(hotels);
+      document.getElementById('hotels-status').textContent = `${hotels.length} Hotel(s) gefunden`;
+    } catch (e) {
+      document.getElementById('hotels-status').textContent = 'Fehler: ' + e.message;
+    }
+  }
+
+  function renderHotels(hotels) {
+    const tbody = document.getElementById('hotels-body');
+    if (!hotels.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty">Keine Hotels gefunden.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = hotels.map(h => {
+      const tagHtml = (h.tags || []).map(t => `<span class="tag">${t}</span>`).join(' ') || '–';
+      return `<tr>
+        <td><span class="badge">#${h.id}</span></td>
+        <td><strong>${h.name || '–'}</strong></td>
+        <td>${h.category ? stars(h.category) : '–'}</td>
+        <td>${h.city || '–'}</td>
+        <td>${h.noRooms ?? '–'}</td>
+        <td>${h.noBeds ?? '–'}</td>
+        <td>${tagHtml}</td>
+        <td><button onclick="openOccupancy(${h.id}, '${(h.name||'Hotel').replace(/'/g,"\\'")}')">Belegung</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function initCategoryFilter() {
+    try {
+      allHotels = await fetchJSON('/api/hotels');
+      const cats = [...new Set(allHotels.map(h => h.category).filter(Boolean))].sort((a,b)=>a-b);
+      const sel = document.getElementById('filter-category');
+      cats.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = '★'.repeat(c) + ` (${c})`;
+        sel.appendChild(opt);
+      });
+      renderHotels(allHotels);
+      document.getElementById('hotels-status').textContent = `${allHotels.length} Hotel(s) geladen`;
+      updateStats(allHotels);
+    } catch (e) {
+      document.getElementById('hotels-status').textContent = 'Fehler beim Laden: ' + e.message;
+    }
+  }
+
+  function updateStats(hotels) {
+    document.getElementById('stat-total').textContent = hotels.length;
+    document.getElementById('stat-rooms').textContent = hotels.reduce((s,h) => s + (h.noRooms||0), 0).toLocaleString('de');
+    document.getElementById('stat-beds').textContent  = hotels.reduce((s,h) => s + (h.noBeds||0), 0).toLocaleString('de');
+    const cats = new Set(hotels.map(h=>h.category).filter(Boolean));
+    document.getElementById('stat-cats').textContent = cats.size;
+  }
+
+  function resetFilter() {
+    document.getElementById('filter-category').value = '';
+    renderHotels(allHotels);
+    updateStats(allHotels);
+    document.getElementById('hotels-status').textContent = `${allHotels.length} Hotel(s) gesamt`;
+  }
+
+  function openOccupancy(hotelId, hotelName) {
+    currentHotelId = hotelId;
+    document.getElementById('occ-hotel-name').textContent = hotelName;
+    document.getElementById('occupancy-section').style.display = 'block';
+    document.getElementById('occupancy-section').scrollIntoView({ behavior: 'smooth' });
+    loadOccupancy();
+  }
+
+  function closeOccupancy() {
+    document.getElementById('occupancy-section').style.display = 'none';
+    currentHotelId = null;
+  }
+
+  async function loadOccupancy() {
+    if (!currentHotelId) return;
+    const yearFrom = document.getElementById('occ-year-from').value;
+    const yearTo   = document.getElementById('occ-year-to').value;
+    let url = `/api/occupancies/${currentHotelId}`;
+    const params = [];
+    if (yearFrom) params.push(`yearFrom=${yearFrom}`);
+    if (yearTo)   params.push(`yearTo=${yearTo}`);
+    if (params.length) url += '?' + params.join('&');
+
+    document.getElementById('occ-status').textContent = 'Lade…';
+    try {
+      const data = await fetchJSON(url);
+      const occs = Array.isArray(data) ? data : (data.occupancies || []);
+      renderOccupancy(occs);
+      document.getElementById('occ-status').textContent = `${occs.length} Einträge`;
+    } catch (e) {
+      document.getElementById('occ-status').textContent = 'Fehler: ' + e.message;
+      document.getElementById('occ-body').innerHTML = '<tr><td colspan="6" class="empty">Keine Daten.</td></tr>';
+    }
+  }
+
+  function renderOccupancy(occs) {
+    const tbody = document.getElementById('occ-body');
+    if (!occs.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">Keine Belegungsdaten vorhanden.</td></tr>';
+      return;
+    }
+    const sorted = [...occs].sort((a,b) => a.year !== b.year ? b.year - a.year : b.month - a.month);
+    tbody.innerHTML = sorted.map(o => `<tr>
+      <td>${o.year}</td>
+      <td>${MONTHS[(o.month||1)-1] || o.month}</td>
+      <td>${o.rooms ?? '–'}</td>
+      <td>${o.usedRooms ?? '–'}</td>
+      <td>${o.usedBeds ?? '–'}</td>
+      <td>${pctBar(o.usedRooms, o.rooms)}</td>
+    </tr>`).join('');
+  }
+
+  initCategoryFilter();
+</script>
+</body>
+</html>
