@@ -130,23 +130,22 @@ public class HotelRepository {
      */
     public Hotel save(Hotel hotel) {
         Integer newId = jdbc.sql("""
-                INSERT INTO hotels (id, noRooms, noBeds, category, name, owner, contact, address, city, cityCode, phone, tags)
+                INSERT INTO hotels (id, category, name, owner, contact, address, city, cityCode, phone, noRooms, noBeds, tags)
                 OUTPUT INSERTED.id
-                VALUES (:id, :noRooms, :noBeds, :category, :name, :owner, :contact, :address, :city, :cityCode, :phone, :tags)
+                VALUES (:id, :category, :name, :owner, :contact, :address, :city, :cityCode, :phone, :noRooms, :noBeds, :tags)
                 """)
                 .param("id", hotel.id())
-                .param("noRooms", hotel.noRooms())
-                .param("noBeds", hotel.noBeds())
                 .param("category", hotel.category())
                 .param("name", hotel.name())
-                .param("address", hotel.address())
                 .param("owner", hotel.owner())
                 .param("contact", hotel.contact())
+                .param("address", hotel.address())
                 .param("city", hotel.city())
                 .param("cityCode", hotel.cityCode())
                 .param("phone", hotel.phone())
+                .param("noRooms", hotel.noRooms())
+                .param("noBeds", hotel.noBeds())
                 .param("tags", hotel.tags())
-
                 .query(Integer.class)
                 .single();
 
