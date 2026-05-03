@@ -1,18 +1,17 @@
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.List;
+import java.sql.*;
+
 
 public class EditTransactionalData extends JFrame {
     //window --> JFrame
+    String url = "jdbc:sqlserver://185.119.119.126:1433;databaseName=DanubeDevs;encrypt=true;trustServerCertificate=true";
+    String user = "danube";
+    String password = "danube";
+    int newId = 0;
 
     //attribute der klasse = Fields
+    private final JComboBox<String> combobox = new JComboBox<>();
     private final JTextField idField = new JTextField();
     private final JTextField nameField = new JTextField();
     private final JTextField roomField = new JTextField();
@@ -23,7 +22,8 @@ public class EditTransactionalData extends JFrame {
     private final JTextField usedBedField = new JTextField();
     private final JButton saveButton = new JButton("Save");
 
-    public EditTransactionalData(Hotel hotel) {
+
+    public EditTransactionalData(Hotel hotel) throws SQLException {
         //Screen dem Hotelobjekt übergeben wird
         setTitle("Edit Transaction Data");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -32,48 +32,21 @@ public class EditTransactionalData extends JFrame {
 
         setupUI(hotel);//Methodenaufruf und übergabe
 
+        getHotelsData();
+
         setupListeners();
     }
 
     //Layout vom Fenster
     private void setupUI(Hotel hotel) {
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10)); //Händelt Absatzabstand
-        JComboBox<String> comboBox = new JComboBox<>();
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));// macht rahmen abstand nicht pickenden text)
 
-        final HttpClient client = HttpClient.newHttpClient();
-        HttpResponse<String> response = null;
-
-        try {
-            HttpRequest getRequest = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:3000/api/hotels" ))
-                    .GET()
-                    .build();
-
-            response = client.send(getRequest, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
-        List<Hotel> hotels = new Gson().fromJson(response.body(), new TypeToken<List<Hotel>>(){}.getType());
-        for (Hotel h : hotels) {
-            comboBox.addItem(h.name());
-        }
-
-        final Hotel[] selectedHotel = {hotel};
-        comboBox.addActionListener(e -> {
-            selectedHotel[0] = hotels.get(comboBox.getSelectedIndex());
-            idField.setText(String.valueOf(selectedHotel[0].id()));
-            nameField.setText(selectedHotel[0].name());
-            roomField.setText(String.valueOf(selectedHotel[0].noRooms()));
-            bedField.setText(String.valueOf(selectedHotel[0].noBeds()));
-        });
-
         //werte einfügen
-        idField.setText(String.valueOf(selectedHotel[0].id()));
-        nameField.setText(selectedHotel[0].name());
-        roomField.setText(String.valueOf(selectedHotel[0].noRooms()));
-        bedField.setText(String.valueOf(selectedHotel[0].noBeds()));
+        idField.setText(String.valueOf(hotel.id));
+        nameField.setText(hotel.name);
+        roomField.setText(String.valueOf(hotel.noRooms));
+        bedField.setText(String.valueOf(hotel.noBeds));
 
         //unveränderbare Felder:
         idField.setEditable(false);
@@ -83,8 +56,8 @@ public class EditTransactionalData extends JFrame {
 
         //fenster aufgebaut und die felder hinzugefügt
         JPanel inputPanel = new JPanel(new GridLayout(12, 2, 10, 10));//eine row fürs bild
-        inputPanel.add(new JLabel("Selected Hotel"));
-        inputPanel.add(comboBox);
+        inputPanel.add(new JLabel("Name"));
+        inputPanel.add(combobox);
         inputPanel.add(new JLabel("ID:"));
         inputPanel.add(idField);
         inputPanel.add(new JLabel("Hotelname:"));
@@ -113,39 +86,69 @@ public class EditTransactionalData extends JFrame {
 
     //zuerst zuhören dann login
     private void setupListeners() {
-        saveButton.addActionListener(e -> {
+        // Validation listener ensures that fields aren't empty/too short
+        saveButton.addActionListener(e -> validateInputs());// wenn eingabe passt, button und weiter zur handle safe methode
+        combobox.addActionListener(e -> {
             try {
-                Occupancies occupancy = new Occupancies(
-                        Integer.parseInt(idField.getText()),
-                        Integer.parseInt(roomField.getText()),
-                        Integer.parseInt(usedRoomsField.getText()),
-                        Integer.parseInt(bedField.getText()),
-                        Integer.parseInt(usedBedField.getText()),
-                        Integer.parseInt(yearField.getText()),
-                        Integer.parseInt(monthField.getText())
-                );
-                handleSave(occupancy);
-            } catch (IOException | InterruptedException ex) {
+                getHotelId();
+            } catch (SQLException ex) {
                 throw new RuntimeException(ex);
             }
         });
     }
 
-    private void handleSave(Occupancies occupancies) throws IOException, InterruptedException{
-        validateInputs();// wenn eingabe passt, button und weiter zur handle safe methode
+    public void getHotelsData() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(url, user, password)){
+            String query = "select * from hotels";
+            PreparedStatement ps = conn.prepareStatement(query);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                combobox.addItem(rs.getString("name"));
+            }
+        }
+    }
 
-        HttpClient client = HttpClient.newHttpClient();
-        String json = new Gson().toJson(occupancies);
+    public void getHotelId() throws SQLException {
+        String selectedName = (String) combobox.getSelectedItem();
+        if (selectedName == null) return;
 
-        HttpRequest postRequest = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:3000/api/occupancies/" + occupancies.id()))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json))
-                .build();
+        try (Connection conn = DriverManager.getConnection(url, user, password)){
+            String query = "select * from hotels where name = ?";
+            PreparedStatement ps = conn.prepareStatement(query);
+            ps.setString(1, selectedName);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                newId = rs.getInt("id");
+                System.out.println(newId);
+                idField.setText(String.valueOf(newId));
+                nameField.setText(selectedName);
+                roomField.setText(String.valueOf(rs.getInt("noRooms")));
+                bedField.setText(String.valueOf(rs.getInt("noBeds")));
+            }
+        }
+    }
 
-        HttpResponse<String> postResponse = client.send(postRequest, HttpResponse.BodyHandlers.ofString());
-        System.out.println("POST Status: " +  postResponse.statusCode());
-        System.out.println("POST Body: " +  postResponse.body());
+    private void handleSave() throws SQLException {
+        //TODO: save occupancy to Database
+        try (Connection conn = DriverManager.getConnection(url, user, password)){
+            String sql = """
+                    insert into occupancies(hotel_id, rooms, usedRooms, beds, usedBeds, year, month)
+                    values(?, ?, ?, ?, ?, ?, ?)
+                    """;
+            try (PreparedStatement ps = conn.prepareStatement(sql)){
+                ps.setInt(1 ,newId);
+                ps.setInt(2, Integer.parseInt(roomField.getText()));
+                ps.setInt(3, Integer.parseInt(usedRoomsField.getText()));
+                ps.setInt(4, Integer.parseInt(bedField.getText()));
+                ps.setInt(5, Integer.parseInt(usedBedField.getText()));
+                ps.setInt(6, Integer.parseInt(yearField.getText()));
+                ps.setInt(7, Integer.parseInt(monthField.getText()));
+                ps.executeUpdate();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        //
     }
 
     //login window: es können nicht mehr betten belegt werden, als vorhanden. string in integer umwandeln zum vergleich
@@ -159,9 +162,14 @@ public class EditTransactionalData extends JFrame {
                 JOptionPane.showMessageDialog(this, "Year has to be at least 1970", "Validation Error", JOptionPane.WARNING_MESSAGE);
             } else if (Integer.parseInt(monthField.getText())<1||Integer.parseInt(monthField.getText())>12) {
                 JOptionPane.showMessageDialog(this, "This month does not exist.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            } else {
+                handleSave();
             }
         } catch (NumberFormatException e) {//wenn parseInt nciht zahlen sieht wird exception geworfen nämlich numberformatexception
             JOptionPane.showMessageDialog(this, "Please enter a number.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
+
     }
 }
