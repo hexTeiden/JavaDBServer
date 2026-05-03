@@ -4,6 +4,7 @@ import com.marie.dbserver.model.Hotel;
 import com.marie.dbserver.model.HotelSizeStats;
 import com.marie.dbserver.model.OccupancySummary;
 import com.marie.dbserver.repository.HotelRepository;
+import com.marie.dbserver.repository.OccupancyRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,9 +15,12 @@ import java.util.List;
 public class HotelController {
 
     private final HotelRepository repo;
+    private final OccupancyRepository occuRepo;
 
-    public HotelController(HotelRepository repo) {
-        this.repo = repo;
+    public HotelController(HotelRepository hotelRepo, OccupancyRepository occuRepo) {
+        this.repo = hotelRepo;
+        this.occuRepo = occuRepo;
+
     }
 
     //US 2
@@ -100,8 +104,9 @@ public class HotelController {
     // DELETE /api/hotel/5
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable int id) {
-        int rowsChanged = repo.deleteById(id);
-        if (rowsChanged == 0) {
+        int hotelRowsChanged = repo.deleteById(id);
+        int occuRowsChanged =occuRepo.removeOccupancy(id);
+        if (hotelRowsChanged == 0 &&  occuRowsChanged == 0) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.noContent().build();

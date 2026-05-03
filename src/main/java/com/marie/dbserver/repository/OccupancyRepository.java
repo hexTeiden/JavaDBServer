@@ -53,4 +53,13 @@ public class OccupancyRepository {
                 .update();
         return occupancy;
     }
+
+    public Integer removeOccupancy(int id) {
+        return jdbc.sql("""
+                DELETE FROM occupancies
+                where hotel_id = :hotel_id
+                """)
+                .param("hotel_id", id)
+                .update();
+        }
 }
